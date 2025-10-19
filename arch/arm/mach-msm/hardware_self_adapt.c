@@ -180,6 +180,7 @@ hw_bt_device_model get_hw_bt_device_model(void)
        machine_is_msm7x27a_U8661() ||
        machine_is_msm7x27a_U8685D() ||
        machine_is_msm7x27a_U8685() ||
+       machine_is_msm7x27a_C8668D() ||
        machine_is_msm7x27a_C8685D())
     {
         return BT_WCN2243;
@@ -281,6 +282,7 @@ hw_lcd_ctrl_bl_type get_hw_lcd_ctrl_bl_type(void)
 		    || machine_is_msm7x27a_C8825D()
 			|| machine_is_msm7x27a_U8685D() 
 			|| machine_is_msm7x27a_U8685() 
+			|| machine_is_msm7x27a_C8668D()
 			|| machine_is_msm7x27a_C8685D())
 	{
 		ctrl_bl_type = CTRL_BL_BY_LCD;
@@ -434,6 +436,7 @@ lcd_panel_type get_lcd_panel_type(void)
  	 }	 
 	 else if(machine_is_msm7x27a_U8685D()
           || machine_is_msm7x27a_U8685()
+          || machine_is_msm7x27a_C8668D()
           || machine_is_msm7x27a_C8685D())
 	 {
 		 switch (lcd_id)
@@ -751,8 +754,7 @@ static int get_sensors_list(void)
         machine_is_msm7x27a_M660()||
         machine_is_msm7x27a_U8815()||
         machine_is_msm7x27a_C8820()||
-        machine_is_msm7x27a_C8825D() ||
-        machine_is_msm7x27a_C8668D())
+        machine_is_msm7x27a_C8825D())
     {
         sensors_list = G_SENSOR + L_SENSOR + P_SENSOR + M_SENSOR;
         printk("####This device has compass\n");
@@ -767,6 +769,7 @@ static int get_sensors_list(void)
     /* The proximity function is achieved by application software */
             || machine_is_msm7x27a_U8685D()
             || machine_is_msm7x27a_C8685D()
+            || machine_is_msm7x27a_C8668D()
             || machine_is_msm7x27a_U8685())
 	{
 	    sensors_list = G_SENSOR;
@@ -1067,6 +1070,7 @@ audio_property_type get_audio_mic_type(void)
      || (machine_is_msm7x27a_C8655_NAND() && (HW_VER_SUB_VC == get_hw_sub_board_id()))
      || machine_is_msm7x27a_U8685D()
      || machine_is_msm7x27a_U8685()
+     || machine_is_msm7x27a_C8668D()
      || machine_is_msm7x27a_C8685D()
 	 )
   {
@@ -1083,6 +1087,7 @@ audio_property_type get_audio_fir_enabled(void)
 {
     if (machine_is_msm7x27a_U8685D()
 	|| machine_is_msm7x27a_U8685()
+	|| machine_is_msm7x27a_C8668D()
 	|| machine_is_msm7x27a_C8685D())
    {
        return FIR_ENABLE;
@@ -1098,6 +1103,7 @@ audio_property_type get_audio_fm_type(void)
 	|| machine_is_msm7x27a_U8661()
 	|| machine_is_msm7x27a_U8685D()
 	|| machine_is_msm7x27a_U8685()
+	|| machine_is_msm7x27a_C8668D()
 	|| machine_is_msm7x27a_C8685D())
    {
        return FM_QUALCOMM;
@@ -1112,7 +1118,7 @@ hw_camera_type get_hw_camera_mirror_type(void)
 {
     hw_camera_type ret = HW_CAMERA_NONES;
     if( machine_is_msm7x27a_C8820() || machine_is_msm7x27a_C8825D() || machine_is_msm7x27a_U8661()
-     || machine_is_msm7x27a_U8685D() || machine_is_msm7x27a_U8685() || machine_is_msm7x27a_C8685D() )
+     || machine_is_msm7x27a_U8685D() || machine_is_msm7x27a_U8685() || machine_is_msm7x27a_C8668D() || machine_is_msm7x27a_C8685D() )
     {
 	    ret = HW_MIRROR_AND_FLIP;
     }

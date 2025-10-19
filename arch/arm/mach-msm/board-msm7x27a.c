@@ -235,6 +235,7 @@ compass_gs_position_type  get_compass_gs_position(void)
     else if(machine_is_msm7x27a_U8685D()
              || (machine_is_msm7x27a_C8820() && (HW_VER_SUB_VC <= get_hw_sub_board_id()))
              || machine_is_msm7x27a_C8685D() 
+			 || machine_is_msm7x27a_C8668D()
              || machine_is_msm7x27a_U8685())
     {
         compass_gs_position=COMPASS_NONE_GS_BOTTOM;
@@ -254,10 +255,10 @@ compass_gs_position_type  get_compass_gs_position(void)
     {
         compass_gs_position=COMPASS_NONE_GS_TOP;
     }
-    else if (machine_is_msm7x27a_C8668D())  
-    {
-        compass_gs_position = COMPASS_BOTTOM_GS_TOP;
-    }
+    // else if (machine_is_msm7x27a_C8668D())  
+    // {
+    //     compass_gs_position = COMPASS_BOTTOM_GS_TOP;
+    // }
     else    
     {
         compass_gs_position=COMPASS_TOP_GS_TOP;
@@ -3672,6 +3673,7 @@ set L10 = PM_VREG_INVALID_ID*/
         || machine_is_msm7x27a_U8185()
 		|| machine_is_msm7x27a_U8685D()
 		|| machine_is_msm7x27a_C8685D()
+		|| machine_is_msm7x27a_C8668D()		
 		|| machine_is_msm7x27a_U8685()
 		|| machine_is_msm7x27a_U8661())
     {
@@ -5600,6 +5602,7 @@ static int get_phone_version(struct tp_resolution_conversion *tp_resolution_type
              machine_is_msm7x27a_U8685D() ||
              machine_is_msm7x27a_U8685() ||
              machine_is_msm7x27a_C8685D() ||
+			 machine_is_msm7x27a_C8668D() ||
              machine_is_msm7x27a_C8668D())
     {
         tp_resolution_type->lcd_x = LCD_X_HVGA;
@@ -6382,17 +6385,9 @@ static void __init virtualkeys_init(void)
         		   ":" __stringify(EV_KEY) ":" __stringify(KEY_SEARCH) ":285:520:70:60"
         		   "\n");            	
     }
-    else if (machine_is_msm7x27a_C8668D())
-    {
-        buf_vkey_size = sprintf(buf_virtualkey,
-        		   __stringify(EV_KEY) ":" __stringify(KEY_HOME)  ":35:520:70:60"
-        		   ":" __stringify(EV_KEY) ":" __stringify(KEY_MENU)   ":118:520:70:60"
-        		   ":" __stringify(EV_KEY) ":" __stringify(KEY_BACK)   ":205:520:70:60"
-        		   ":" __stringify(EV_KEY) ":" __stringify(KEY_SEARCH) ":285:520:70:60"
-        		   "\n");            	
-    }
     else if (machine_is_msm7x27a_U8685D() ||
              machine_is_msm7x27a_U8685() ||
+			 machine_is_msm7x27a_C8668D() ||
              machine_is_msm7x27a_C8685D())
     /*change Y210 virtualkeys area*/
     {
@@ -6792,7 +6787,7 @@ MACHINE_START(MSM7X27A_U8661, "MSM7x27a U8661 BOARD")
 	.timer		= &msm_timer,
 	.init_early     = msm7x2x_init_early,
 MACHINE_END
-MACHINE_START(MSM7X27A_C8668D, "MSM7x27a C8668D BOARD")
+MACHINE_START(MSM7X27A_C8668D, "MSM7x27a Y210 BOARD")
 	.boot_params	= PHYS_OFFSET + 0x100,
 	.map_io		= msm_common_io_init,
 	.reserve	= msm7x27a_reserve,

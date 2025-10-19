@@ -98,7 +98,7 @@ const s_board_hw_version_type s_board_hw_version_table[] =
    {MACH_TYPE_MSM7X27A_C8820, "MSM7627A_C8820","HC1C8820M"},
    {MACH_TYPE_MSM7X27A_C8825D, "MSM7627A_C8825D","HC1C8820M"},
    {MACH_TYPE_MSM7X27A_U8661, "MSM7225A_U8661","HD1U8661M"},
-   {MACH_TYPE_MSM7X27A_C8668D, "MSM7225A_C8668D","HC1C8668M"},
+   {MACH_TYPE_MSM7X27A_C8668D, "MSM7225A_Y210","HC1C8668M"},
    {MACH_TYPE_MSM7X27A_U8685D, "MSM7225A_Y210-0010","HD1U8685M"},
    /*change product name from C8685D to Y210-2010*/
    {MACH_TYPE_MSM7X27A_C8685D, "MSM7225A_Y210-2010","HC1C8685M"},
@@ -280,7 +280,7 @@ static int app_version_read_proc(char *page, char **start, off_t off,
 	int len;
 	char *compass_gs_name = NULL;
 	char *sensors_list_name = NULL;
-    /*declare s_board_id¡¢sub_ver¡¢hw_version_id and hw_version*/
+    /*declare s_board_idï¿½ï¿½sub_verï¿½ï¿½hw_version_id and hw_version*/
 	char s_board_id[BOARD_ID_LEN] = {0};
 	char sub_ver[SUB_VER_LEN] = {0};
 	char hw_version_id[HW_VERSION] = {0};
