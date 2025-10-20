@@ -377,7 +377,7 @@ lcd_panel_type get_lcd_panel_type(void)
 	 }
 	 /* add U8655_EMMC, use the u8655 configuration */
 	 else if( machine_is_msm7x27a_U8655() || machine_is_msm7x27a_U8655_EMMC() || machine_is_msm7x27a_C8655_NAND()||
-	          machine_is_msm7x27a_U8661() || machine_is_msm7x27a_C8668D())
+	          machine_is_msm7x27a_U8661())
 	 {
 		 switch (lcd_id)
 		 {
@@ -448,14 +448,15 @@ lcd_panel_type get_lcd_panel_type(void)
 				hw_lcd_panel = MIPI_NT35310_TIANMA_HVGA;
 				break;
 			case 2:
-				hw_lcd_panel = MIPI_HX8357C_CHIMEI_IPS_HVGA;
+				hw_lcd_panel = MIPI_NT35310_BYD_HVGA;
 				break;
 			case 3:
 				hw_lcd_panel = MIPI_NT35310_BOE_HVGA;
 				break;
 
 			default: 
-				hw_lcd_panel = LCD_HX8357B_TIANMA_HVGA;
+				// hw_lcd_panel = LCD_HX8357B_TIANMA_HVGA;
+				hw_lcd_panel = MIPI_NT35310_TIANMA_HVGA;
 				break;
 		 }
 	 }

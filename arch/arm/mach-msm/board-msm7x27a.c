@@ -255,10 +255,6 @@ compass_gs_position_type  get_compass_gs_position(void)
     {
         compass_gs_position=COMPASS_NONE_GS_TOP;
     }
-    // else if (machine_is_msm7x27a_C8668D())  
-    // {
-    //     compass_gs_position = COMPASS_BOTTOM_GS_TOP;
-    // }
     else    
     {
         compass_gs_position=COMPASS_TOP_GS_TOP;

@@ -8,9 +8,10 @@ location=.
 vendor=huawei
 
 export target=y210
-export defconfig=Phoenix_defconfig
+# export defconfig=Phoenix_defconfig
+export defconfig=y210_defconfig
 
-export compiler=~/arm-eabi-4.4.3/bin/arm-eabi- 
+export compiler=~/arm-eabi-4.4.3/bin/arm-eabi-
 
 cd $location
 export ARCH=arm
@@ -24,10 +25,10 @@ n|N ) echo "continuing...";;
 * ) echo "invalid option"; sleep 2 ; build.sh;;
 esac
 
-echo "now building the kernel"
+echo "now building the kernel: target:$target defconfig:$defconfig compiler:$compiler"
 
 make $defconfig
-make -j81
+make -j32
 
 
 if [ -f arch/arm/boot/zImage ]; then
