@@ -1094,11 +1094,13 @@ static long audio_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 			if (rc < 0) {
 				MM_ERR("AUDIO_FLUSH interrupted\n");
 				rc = -EINTR;
+				break;
 			}
 		} else {
 			audio->rflush = 0;
 			audio->wflush = 0;
 		}
+		rc = 0;
 		break;
 
 	case AUDIO_OUTPORT_FLUSH:
