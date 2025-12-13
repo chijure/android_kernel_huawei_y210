@@ -25,10 +25,20 @@ n|N ) echo "continuing...";;
 * ) echo "invalid option"; sleep 2 ; build.sh;;
 esac
 
-echo "now building the kernel: target:$target defconfig:$defconfig compiler:$compiler"
+echo "now building the kernel"
+
+# Start time tracking
+start_time=$(date +%s)
 
 make $defconfig
-make -j32
+make -j16
+
+
+# Calculate compilation time
+end_time=$(date +%s)
+compilation_time=$((end_time - start_time))
+minutes=$((compilation_time / 60))
+seconds=$((compilation_time % 60))
 
 
 if [ -f arch/arm/boot/zImage ]; then
@@ -48,9 +58,18 @@ cd zip-creator
 rm -f *.zip
 zip -r $zipfile * -x *kernel/.gitignore*
 
+echo "==============================================="
+echo "Compilation successful!"
+echo "Time elapsed: ${minutes} minutes and ${seconds} seconds"
+echo "==============================================="
+
+
 echo "zip saved to zip-creator/$zipfile"
 
 else # [ -f arch/arm/boot/zImage ]
+echo "==============================================="
+echo "Build failed after ${minutes} minutes and ${seconds} seconds"
+echo "==============================================="
 echo "the build failed so a zip won't be created"
 fi # [ -f arch/arm/boot/zImage ]
 
