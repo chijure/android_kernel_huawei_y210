@@ -266,11 +266,10 @@ hw_lcd_ctrl_bl_type get_hw_lcd_ctrl_bl_type(void)
 	/* U8661 uses PM pwm. */
 	/* C8820VC uses PM pwm. */
 	/* C8668D uses PM pwm. */
-	if (machine_is_msm7x27a_umts() || machine_is_msm7x27a_cdma()
+    if (machine_is_msm7x27a_umts() || machine_is_msm7x27a_cdma()
 		|| machine_is_msm7x27a_U8815() || machine_is_msm7x27a_U8655_EMMC()
 		|| machine_is_msm7x27a_U8185() || machine_is_msm7x27a_U8655()
 		|| machine_is_msm7x27a_M660()  || machine_is_msm7x27a_U8661()
-		|| machine_is_msm7x27a_C8668D() 
 		|| (machine_is_msm7x27a_C8820() && (HW_VER_SUB_VC <= get_hw_sub_board_id()))
 		)
 	{
@@ -282,7 +281,7 @@ hw_lcd_ctrl_bl_type get_hw_lcd_ctrl_bl_type(void)
 		    || machine_is_msm7x27a_C8825D()
 			|| machine_is_msm7x27a_U8685D() 
 			|| machine_is_msm7x27a_U8685() 
-			|| machine_is_msm7x27a_C8668D()
+			|| machine_is_msm7x27a_C8668D() /* Y210 family panels expect CABC commands */
 			|| machine_is_msm7x27a_C8685D())
 	{
 		ctrl_bl_type = CTRL_BL_BY_LCD;
@@ -448,7 +447,7 @@ lcd_panel_type get_lcd_panel_type(void)
 				hw_lcd_panel = MIPI_NT35310_TIANMA_HVGA;
 				break;
 			case 2:
-				hw_lcd_panel = MIPI_NT35310_BYD_HVGA;
+				hw_lcd_panel = MIPI_NT35310_BOE_HVGA;
 				break;
 			case 3:
 				hw_lcd_panel = MIPI_NT35310_BOE_HVGA;
@@ -718,6 +717,18 @@ void set_st303_gs_support(bool status)
 bool rgb_led_is_supported(void)
 {
 	bool ret = false;
+
+	return ret;
+}
+
+bool rgb_led_force_pmic(void)
+{
+	bool ret = false;
+
+	if (machine_is_msm7x27a_C8668D() ||
+		machine_is_msm7x27a_U8685D() ||
+		machine_is_msm7x27a_C8685D())
+		ret = true;
 
 	return ret;
 }

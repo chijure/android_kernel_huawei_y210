@@ -311,6 +311,7 @@ void set_st303_gs_support(bool status);
  *          1 ----support RGB LED driver
  */
 bool rgb_led_is_supported(void);
+bool rgb_led_force_pmic(void);
 bool camera_is_supported(void);
 void set_camera_support(bool status);
 bool board_support_flash(void);

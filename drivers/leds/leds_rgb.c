@@ -30,6 +30,7 @@ RGB LED DRIVER
 #define GPIO_LED_RED 4
 #define GPIO_LED_GREEN 11
 
+#define RGB_DEBUG
 #ifdef RGB_DEBUG
 #define RGB_PRINT(x...) do{ \
 		printk(KERN_INFO "[RGB_LED] "x); \
@@ -38,13 +39,14 @@ RGB LED DRIVER
 #define RGB_PRINT(x...) do{}while(0)
 #endif
 static hw_ds_type board_ds = HW_NODS;
+static bool force_rgb_pmic;
 static void set_red_brightness(struct led_classdev *led_cdev,
 					enum led_brightness value)
 {
 	int ret = 0;
 
-	RGB_PRINT("%s: value = %d\n",__func__, value);
-    if (HW_DS == board_ds)
+	RGB_PRINT("%s: value = %d force_pmic=%d ds=%d\n",__func__, value, force_rgb_pmic, board_ds);
+    if (HW_DS == board_ds && !force_rgb_pmic)
     {
 		/*ap side control the gpio*/
     	gpio_tlmm_config(GPIO_CFG(GPIO_LED_RED, 0, GPIO_CFG_OUTPUT, GPIO_CFG_NO_PULL, GPIO_CFG_2MA), GPIO_CFG_ENABLE);
@@ -69,9 +71,9 @@ static void set_green_brightness(struct led_classdev *led_cdev,
 {
 	int ret = 0;
 	
-	RGB_PRINT("%s: value = %d\n",__func__, value);
+	RGB_PRINT("%s: value = %d force_pmic=%d ds=%d\n",__func__, value, force_rgb_pmic, board_ds);
 
-    if (HW_DS == board_ds)
+    if (HW_DS == board_ds && !force_rgb_pmic)
     {
 		/*ap side control the gpio*/
     	gpio_tlmm_config(GPIO_CFG(GPIO_LED_GREEN, 0, GPIO_CFG_OUTPUT, GPIO_CFG_NO_PULL, GPIO_CFG_2MA), GPIO_CFG_ENABLE);
@@ -157,9 +159,11 @@ static int rgb_leds_probe(struct platform_device *pdev)
 		goto err_led2_classdev_register_failed;
 	}
     board_ds = get_hw_ds_type();
+    force_rgb_pmic = rgb_led_force_pmic();
+    RGB_PRINT("rgb_leds_probe board_ds=%d force_pmic=%d\n", board_ds, force_rgb_pmic);
     
     /*double sim card phone use gpio to control red led and green led*/
-    if (HW_DS == board_ds)
+    if (HW_DS == board_ds && !force_rgb_pmic)
     {
         gpio_request(GPIO_LED_RED, "red_led");
 	    gpio_tlmm_config(GPIO_CFG(GPIO_LED_RED, 0, GPIO_CFG_OUTPUT, GPIO_CFG_NO_PULL, GPIO_CFG_2MA), GPIO_CFG_ENABLE);
