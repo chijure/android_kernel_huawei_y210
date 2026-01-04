@@ -1242,7 +1242,9 @@ rmnet_unbind(struct usb_configuration *c, struct usb_function *f)
 	dev->epout = dev->epin = dev->epnotify = NULL; /* release endpoints */
 
 	destroy_workqueue(dev->wq);
+#if defined(CONFIG_DEBUG_FS)
 	debugfs_remove_recursive(dent);
+#endif
 	kfree(dev);
 
 }

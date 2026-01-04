@@ -1858,6 +1858,7 @@ static char *usb_functions_default_adb[] = {
 	"modem",
 	"nmea",
 	"rmnet",
+	"mtp",
 	"usb_mass_storage",
 };
 
@@ -1878,6 +1879,9 @@ static char *usb_functions_all[] = {
 	"diag",
 #endif
 	"adb",
+#ifdef CONFIG_USB_ANDROID_MTP
+	"mtp",
+#endif
 #ifdef CONFIG_USB_F_SERIAL
 	"modem",
 	"nmea",
@@ -1967,6 +1971,9 @@ static char *usb_functions_hw_normal_adb[] = {
 	"usb_mass_storage",
 	"adb",
 	"diag",
+#ifdef CONFIG_USB_ANDROID_MTP
+	"mtp",
+#endif
 };
 
 static char *usb_functions_hw_normal[] = {
@@ -1985,6 +1992,7 @@ static char *usb_functions_google_ms[] = {
 
 static char *usb_functions_google_ms_adb[] = {
 	"usb_mass_storage",
+	"mtp",
 	"adb",	
 };
 
@@ -2007,6 +2015,9 @@ static char *usb_functions_all[] = {
 #endif
     "usb_mass_storage",
     "adb",
+#ifdef CONFIG_USB_ANDROID_MTP
+    "mtp",
+#endif
 #ifdef CONFIG_USB_ANDROID_DIAG
     "diag",
 #endif
