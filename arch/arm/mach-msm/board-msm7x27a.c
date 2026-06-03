@@ -3877,6 +3877,37 @@ static struct platform_device msm_device_adspdec = {
 	},
 };
 
+/* pmem_gpu0/1: GPU-accessible physical memory regions.
+ * Required by GB-era Adreno 200 blobs for GPU buffer allocation. */
+#define MSM_PMEM_GPU0_SIZE  0x400000  /* 4 MB */
+#define MSM_PMEM_GPU1_SIZE  0x400000  /* 4 MB */
+
+static struct android_pmem_platform_data android_pmem_gpu0_pdata = {
+	.name = "pmem_gpu0",
+	.allocator_type = PMEM_ALLOCATORTYPE_SYSTEM,
+	.cached = 0,
+	.memory_type = MEMTYPE_EBI1,
+};
+
+static struct platform_device android_pmem_gpu0_device = {
+	.name = "android_pmem",
+	.id = 5,
+	.dev = { .platform_data = &android_pmem_gpu0_pdata },
+};
+
+static struct android_pmem_platform_data android_pmem_gpu1_pdata = {
+	.name = "pmem_gpu1",
+	.allocator_type = PMEM_ALLOCATORTYPE_SYSTEM,
+	.cached = 0,
+	.memory_type = MEMTYPE_EBI1,
+};
+
+static struct platform_device android_pmem_gpu1_device = {
+	.name = "android_pmem",
+	.id = 6,
+	.dev = { .platform_data = &android_pmem_gpu1_pdata },
+};
+
 static struct android_pmem_platform_data android_pmem_audio_pdata = {
 	.name = "pmem_audio",
 	.allocator_type = PMEM_ALLOCATORTYPE_BITMAP,
@@ -4778,6 +4809,8 @@ static struct platform_device *surf_ffa_devices[] __initdata = {
 	&android_usb_device,
 	&android_pmem_device,
 	&android_pmem_adsp_device,
+	&android_pmem_gpu0_device,
+	&android_pmem_gpu1_device,
 	&usb_mass_storage_device,
 	&rndis_device,
 	&usb_diag_device,
@@ -4986,6 +5019,8 @@ static void __init size_pmem_devices(void)
     android_pmem_pdata.size = pmem_mdp_size;        
 #endif
 	android_pmem_audio_pdata.size = pmem_audio_size;
+	android_pmem_gpu0_pdata.size = MSM_PMEM_GPU0_SIZE;
+	android_pmem_gpu1_pdata.size = MSM_PMEM_GPU1_SIZE;
 #endif
 }
 
@@ -5000,6 +5035,8 @@ static void __init reserve_pmem_memory(void)
 	reserve_memory_for(&android_pmem_adsp_pdata);
 	reserve_memory_for(&android_pmem_pdata);
 	reserve_memory_for(&android_pmem_audio_pdata);
+	reserve_memory_for(&android_pmem_gpu0_pdata);
+	reserve_memory_for(&android_pmem_gpu1_pdata);
 	msm7x27a_reserve_table[MEMTYPE_EBI1].size += pmem_kernel_ebi1_size;
 #endif
 }

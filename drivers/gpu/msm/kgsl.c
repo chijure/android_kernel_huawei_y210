@@ -1681,7 +1681,12 @@ kgsl_mmap_memstore(struct kgsl_device *device, struct vm_area_struct *vma)
 	if (vma->vm_flags & VM_WRITE)
 		return -EPERM;
 
-	if (memdesc->size  !=  vma_size) {
+	/* Accept the legacy GB-era devmemstore size (32 bytes) in addition to
+	 * the current size — GB blobs mmap with sizeof(old_devmemstore)=32.
+	 * Only the first vma_size bytes are exposed; current_context lives in
+	 * the upper 8 bytes and is safely outside the mapped range for blobs. */
+	if (vma_size != memdesc->size &&
+	    vma_size != KGSL_DEVMEMSTORE_LEGACY_SIZE) {
 		KGSL_MEM_ERR(device, "memstore bad size: %d should be %d\n",
 			     vma_size, memdesc->size);
 		return -EINVAL;

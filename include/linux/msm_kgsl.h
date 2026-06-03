@@ -84,10 +84,13 @@ struct kgsl_devinfo {
 	unsigned int mmu_enabled;
 	unsigned int gmem_gpubaseaddr;
 	/*
-	* This field contains the adreno revision
-	* number 200, 205, 220, etc...
+	* Host-accessible base address of on-chip GMEM (0 if not mapped).
+	* Restored for Gingerbread blob compatibility — field was renamed
+	* to gpu_id in newer KGSL; blobs compiled against GB headers expect
+	* this field at offset 16.  The GPU revision can be derived from
+	* chip_id, so gpu_id is redundant for GB-era userspace.
 	*/
-	unsigned int gpu_id;
+	unsigned int gmem_hostbaseaddr;
 	unsigned int gmem_sizebytes;
 };
 
@@ -107,6 +110,10 @@ struct kgsl_devmemstore {
 	unsigned int current_context;
 	unsigned int sbz5;
 };
+
+/* Size of the legacy (Gingerbread-era) kgsl_devmemstore that GB blobs use
+ * to mmap the memstore region. Keep in sync with userspace blob expectations. */
+#define KGSL_DEVMEMSTORE_LEGACY_SIZE  32
 
 #define KGSL_DEVICE_MEMSTORE_OFFSET(field) \
 	offsetof(struct kgsl_devmemstore, field)

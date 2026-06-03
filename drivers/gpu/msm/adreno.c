@@ -726,9 +726,17 @@ static int adreno_getproperty(struct kgsl_device *device,
 
 			memset(&devinfo, 0, sizeof(devinfo));
 			devinfo.device_id = device->id+1;
-			devinfo.chip_id = adreno_dev->chip_id;
+			/* Report chip_id with minor/patch cleared so GB-era blobs
+			 * recognize the GPU type. Real chip is 0x00020503 (A200
+			 * rev 5.3) but many blobs only know 0x00020000 (A200 base). */
+			devinfo.chip_id = adreno_dev->chip_id & 0xffff0000;
 			devinfo.mmu_enabled = kgsl_mmu_enabled();
-			devinfo.gpu_id = adreno_dev->gpurev;
+			/* gmem_hostbaseaddr: GB-era blobs read this field at
+			 * offset 16 to identify the GPU revision and select
+			 * their function dispatch table. Provide the numeric
+			 * revision (e.g. 200 for A200) so the blob selects the
+			 * correct table. No actual host mapping of GMEM exists. */
+			devinfo.gmem_hostbaseaddr = adreno_dev->gpurev;
 			devinfo.gmem_gpubaseaddr = adreno_dev->gmemspace.
 					gpu_base;
 			devinfo.gmem_sizebytes = adreno_dev->gmemspace.
