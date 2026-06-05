@@ -549,16 +549,20 @@ KBUILD_CFLAGS  += -O3 -fmodulo-sched -fmodulo-sched-allow-regmoves -fno-tree-vec
 endif
 
 # Add Huawei Marco for different BT chip
-# ifeq ($(ENABLE_BCM_4330),true)
-# KBUILD_CFLAGS += -DHUAWEI_BT_BCM4330
-# endif
-#ifeq ($(ENABLE_WCN_2243),true)
+ifeq ($(CONFIG_MACH_MSM7X27A_C8668D),y)
 KBUILD_CFLAGS += -DHUAWEI_BT_WCN2243
-#endif
+else
+ifeq ($(ENABLE_BCM_4330),true)
+KBUILD_CFLAGS += -DHUAWEI_BT_BCM4330
+endif
+ifeq ($(ENABLE_WCN_2243),true)
+KBUILD_CFLAGS += -DHUAWEI_BT_WCN2243
+endif
+endif
 
-# ifeq ($(BT_BCM_VER_3), true)
-# KBUILD_CFLAGS += -DHUAWEI_BT_BCM_VER_3
-# endif
+ifeq ($(BT_BCM_VER_3), true)
+KBUILD_CFLAGS += -DHUAWEI_BT_BCM_VER_3
+endif
 
 include $(srctree)/arch/$(SRCARCH)/Makefile
 
