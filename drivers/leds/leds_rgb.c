@@ -30,7 +30,6 @@ RGB LED DRIVER
 #define GPIO_LED_RED 4
 #define GPIO_LED_GREEN 11
 
-#define RGB_DEBUG
 #ifdef RGB_DEBUG
 #define RGB_PRINT(x...) do{ \
 		printk(KERN_INFO "[RGB_LED] "x); \
