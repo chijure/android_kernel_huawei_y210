@@ -6436,9 +6436,9 @@ static void __init virtualkeys_init(void)
     /*change Y210 virtualkeys area*/
     {
     	buf_vkey_size = sprintf(buf_virtualkey,
-        			__stringify(EV_KEY) ":" __stringify(KEY_BACK)  ":47:510:70:50"
-        		   ":" __stringify(EV_KEY) ":" __stringify(KEY_HOME)   ":160:510:80:50"
-        		   ":" __stringify(EV_KEY) ":" __stringify(KEY_MENU) ":275:510:70:50"
+        			__stringify(EV_KEY) ":" __stringify(KEY_BACK)  ":50:520:100:70"
+        		   ":" __stringify(EV_KEY) ":" __stringify(KEY_HOME)   ":160:520:120:70"
+        		   ":" __stringify(EV_KEY) ":" __stringify(KEY_MENU) ":270:520:100:70"
         		   "\n"); 
     }
 	else 
