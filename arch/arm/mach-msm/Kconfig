@@ -681,13 +681,6 @@ config MACH_MSM7X27A_U8685
 	help
 	  Support for the HUAWEI 7X27A U8685 board.
 	  
-config FORCE_FAST_CHARGE
-	bool "Force AC charge mode at will"
-	default y
-	help
-	  A simple sysfs interface to force adapters that
-	  are detected as USB to charge as AC.	  
-
 endmenu
 
 config  HUAWEI_KERNEL
@@ -1321,15 +1314,6 @@ config MSM_CPU_FREQ_MIN
 	int "Min CPU Frequency"
 	depends on MSM_CPU_FREQ_SET_MIN_MAX
 	default 245760
-
-config MSM7X27A_OVERCLOCK
-	bool "Enable SoC overclocking for MSM7x27A"
-	depends on MSM_CPU_FREQ_SET_MIN_MAX
-	depends on ARCH_MSM7X27A
-	default n
-	help
-	  Enable support for non-standard msm7x27A acpuclock frequencies/voltages.
-
 
 endif # CPU_FREQ_MSM
 

@@ -612,7 +612,7 @@ static int __init logger_init(void)
 	int ret;
 
 	/*add user log on/off switch*/
-    #if 0  /* Disabled Huawei logger check for development */
+    #ifdef CONFIG_HUAWEI_KERNEL
 	u16 nv_item = LOG_CTL_INFO_ITEM;
 	struct log_ctl ctl_info;
 	int  rval = -1;

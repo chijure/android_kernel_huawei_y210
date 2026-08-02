@@ -86,3 +86,7 @@ arch/arm/boot/compressed/lib1funcs.S
 arch/arm/boot/compressed/vmlinux
 arch/arm/boot/compressed/vmlinux.lds
 arch/arm/kernel/vmlinux.lds
+# Local Y210 analysis/benchmark outputs
+/utils/
+/analyze_y210_kernel.sh
+/benchmark_y210.sh
