@@ -1007,6 +1007,15 @@ config NETFILTER_XT_MATCH_U32
 
 	  Details and examples are in the kernel module source.
 
+config NETFILTER_XT_MATCH_QTAGUID
+	bool '"quota, tag, owner" match and stats support'
+	depends on NETFILTER_XT_MATCH_SOCKET
+	depends on NETFILTER_XT_MATCH_OWNER=n
+	help
+	  Android ICS per-UID network traffic accounting via /proc/net/xt_qtaguid/.
+	  Required for BatteryStats network usage tracking (ICS and above).
+	  If unsure, say Y.
+
 endif # NETFILTER_XTABLES
 
 endmenu

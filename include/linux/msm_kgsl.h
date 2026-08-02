@@ -439,6 +439,28 @@ struct kgsl_gpumem_alloc {
 #define IOCTL_KGSL_GPUMEM_ALLOC \
 	_IOWR(KGSL_IOC_TYPE, 0x2f, struct kgsl_gpumem_alloc)
 
+/*
+ * A timestamp event allows the user space to register an action following an
+ * expired timestamp.
+ */
+
+struct kgsl_timestamp_event {
+	int type;
+	unsigned int timestamp;
+	unsigned int context_id;
+	void *priv;
+	size_t len;
+};
+
+#define IOCTL_KGSL_TIMESTAMP_EVENT \
+	_IOW(KGSL_IOC_TYPE, 0x31, struct kgsl_timestamp_event)
+
+#define KGSL_TIMESTAMP_EVENT_GENLOCK 1
+
+struct kgsl_timestamp_event_genlock {
+	int handle;
+};
+
 #ifdef __KERNEL__
 #ifdef CONFIG_MSM_KGSL_DRM
 int kgsl_gem_obj_addr(int drm_fd, int handle, unsigned long *start,

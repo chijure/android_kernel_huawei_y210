@@ -732,14 +732,15 @@ static void clear_pressed_point_status(struct melfas_ts_data *ts)
     int i =0;
     if (ts->support_multi_touch)
 	{
-		for (i = 0; i < MELFAS_MAX_TOUCH; i++)
-		{
+        for (i = 0; i < MELFAS_MAX_TOUCH; i++)
+        {
             input_report_abs(ts->input_dev, ABS_MT_POSITION_X,  0);
             input_report_abs(ts->input_dev, ABS_MT_POSITION_Y,  0);
             input_report_abs(ts->input_dev, ABS_MT_TOUCH_MAJOR, 0);
             input_report_abs(ts->input_dev, ABS_MT_WIDTH_MAJOR, 0);
 			input_mt_sync(ts->input_dev);				
         }		
+        input_report_key(ts->input_dev, BTN_TOUCH, 0);
 	}
     else
 	{
@@ -872,6 +873,11 @@ static void melfas_ts_work_func(struct work_struct *work)
     }
     else // MIP (Melfas Interface Protocol)
     {
+		/* Rebuild the touch state from the current packet only.
+		 * Leaving stale slots around can create ghost contacts and
+		 * break drag gestures in the lock screen.
+		 */
+		memset(g_Mtouch_info, 0, sizeof(g_Mtouch_info));
 
         /*printf debug info*/
         for(k=0; k < read_num; k++)
@@ -907,14 +913,25 @@ static void melfas_ts_work_func(struct work_struct *work)
 	} 
 	if (ts->support_multi_touch)
 	{
-		for (i = 0; i < fingerID; i++)
+		bool touch_active = false;
+		for (i = 0; i < MELFAS_MAX_TOUCH; i++)
 		{
+			if (g_Mtouch_info[i].id == 0 || g_Mtouch_info[i].strength == 0)
+				continue;
+
             input_report_abs(ts->input_dev, ABS_MT_POSITION_X,  g_Mtouch_info[i].fingerX);
             input_report_abs(ts->input_dev, ABS_MT_POSITION_Y,  g_Mtouch_info[i].fingerY);
             input_report_abs(ts->input_dev, ABS_MT_TOUCH_MAJOR, g_Mtouch_info[i].strength);
             input_report_abs(ts->input_dev, ABS_MT_WIDTH_MAJOR, g_Mtouch_info[i].width);
+            if (!touch_active) {
+                input_report_abs(ts->input_dev, ABS_X, g_Mtouch_info[i].fingerX);
+                input_report_abs(ts->input_dev, ABS_Y, g_Mtouch_info[i].fingerY);
+                input_report_abs(ts->input_dev, ABS_PRESSURE, g_Mtouch_info[i].strength);
+            }
+			touch_active = true;
 			input_mt_sync(ts->input_dev);				
         }		
+        input_report_key(ts->input_dev, BTN_TOUCH, touch_active ? 1 : 0);
 	}
 	else
 	{

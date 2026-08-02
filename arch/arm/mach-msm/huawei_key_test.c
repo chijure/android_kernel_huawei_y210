@@ -481,8 +481,12 @@ static int do_late_probe(void)
         
     current_ts_dev = kset_find_input_devices(devices_kset);
 
-    /* has found a touch dev */
-    if(current_ts_dev != NULL)
+    /*
+     * Disable the synthetic touchscreen test device in production.
+     * It copies only capability bits and registers invalid ABS ranges,
+     * which confuses InputReader and interferes with the real panel.
+     */
+    if (0 && current_ts_dev != NULL)
     {
         KEY_TEST_DEBUG("prob touch dev ...\n");
         /*touch screen input dev init*/

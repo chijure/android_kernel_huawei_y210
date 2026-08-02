@@ -20,6 +20,7 @@
 #include <linux/android_pmem.h>
 #include <linux/vmalloc.h>
 #include <linux/pm_runtime.h>
+#include <linux/genlock.h>
 
 #include <linux/ashmem.h>
 #include <linux/major.h>
@@ -1549,6 +1550,83 @@ kgsl_ioctl_gpumem_alloc(struct kgsl_device_private *dev_priv,
 	return result;
 }
 
+struct kgsl_genlock_event {
+	struct work_struct work;
+	struct kgsl_device *device;
+	struct genlock_handle *handle;
+	unsigned int timestamp;
+};
+
+static void kgsl_genlock_event_work(struct work_struct *work)
+{
+	struct kgsl_genlock_event *event = container_of(work,
+		struct kgsl_genlock_event, work);
+	int result;
+
+	mutex_lock(&event->device->mutex);
+	kgsl_check_suspended(event->device);
+
+	event->device->active_cnt++;
+	result = event->device->ftbl->waittimestamp(event->device,
+		event->timestamp, 10 * MSEC_PER_SEC);
+	if (result)
+		KGSL_DRV_ERR(event->device,
+			"timestamp event wait failed: ts=%x result=%d\n",
+			event->timestamp, result);
+
+	kgsl_memqueue_drain(event->device);
+	INIT_COMPLETION(event->device->suspend_gate);
+	event->device->active_cnt--;
+	complete(&event->device->suspend_gate);
+
+	result = genlock_lock(event->handle, GENLOCK_UNLOCK, 0, 0);
+	if (result)
+		KGSL_DRV_ERR(event->device,
+			"timestamp event genlock unlock failed: %d\n",
+			result);
+
+	kgsl_check_idle_locked(event->device);
+	mutex_unlock(&event->device->mutex);
+
+	genlock_put_handle(event->handle);
+	kfree(event);
+}
+
+static long
+kgsl_ioctl_timestamp_event(struct kgsl_device_private *dev_priv,
+			unsigned int cmd, void *data)
+{
+	struct kgsl_timestamp_event *param = data;
+	struct kgsl_timestamp_event_genlock genlock_param;
+	struct kgsl_genlock_event *event;
+
+	if (param->type != KGSL_TIMESTAMP_EVENT_GENLOCK)
+		return -EINVAL;
+
+	if (param->len != sizeof(genlock_param))
+		return -EINVAL;
+
+	if (copy_from_user(&genlock_param, param->priv, sizeof(genlock_param)))
+		return -EFAULT;
+
+	event = kzalloc(sizeof(*event), GFP_KERNEL);
+	if (event == NULL)
+		return -ENOMEM;
+
+	event->handle = genlock_get_handle_fd(genlock_param.handle);
+	if (event->handle == NULL) {
+		kfree(event);
+		return -EINVAL;
+	}
+
+	event->device = dev_priv->device;
+	event->timestamp = param->timestamp;
+	INIT_WORK(&event->work, kgsl_genlock_event_work);
+	schedule_work(&event->work);
+
+	return 0;
+}
+
 typedef long (*kgsl_ioctl_func_t)(struct kgsl_device_private *,
 	unsigned int, void *);
 
@@ -1586,6 +1664,8 @@ static const struct {
 			kgsl_ioctl_sharedmem_flush_cache, 0),
 	KGSL_IOCTL_FUNC(IOCTL_KGSL_GPUMEM_ALLOC,
 			kgsl_ioctl_gpumem_alloc, 0),
+	KGSL_IOCTL_FUNC(IOCTL_KGSL_TIMESTAMP_EVENT,
+			kgsl_ioctl_timestamp_event, 0),
 };
 
 static long kgsl_ioctl(struct file *filep, unsigned int cmd, unsigned long arg)
