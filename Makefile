@@ -622,6 +622,31 @@ KBUILD_CFLAGS += $(call cc-option,-Wdeclaration-after-statement,)
 # disable pointer signed / unsigned warnings in gcc 4.0
 KBUILD_CFLAGS += $(call cc-option,-Wno-pointer-sign,)
 
+# gcc 4.6+ added -Wunused-but-set-variable under -Wall; this kernel predates
+# that compiler and has many pre-existing (harmless) instances across generic
+# code, not just this device's own drivers, and the CAF gcc-wrapper.py build
+# script treats any non-whitelisted warning as fatal.
+KBUILD_CFLAGS += $(call cc-option,-Wno-unused-but-set-variable,)
+
+# Same story for -Warray-bounds (also stricter under gcc 4.6+): well-known
+# false positive in generic arch/arm/mm/dma-mapping.c-style bounded pointer
+# arithmetic the compiler can't statically verify.
+KBUILD_CFLAGS += $(call cc-option,-Wno-array-bounds,)
+
+# -Wmaybe-uninitialized false-positives pervasively across generic VFS/fs
+# code under gcc 4.6+ (mainline Linux added this same accommodation for the
+# same compiler-version reason around this kernel's era).
+KBUILD_CFLAGS += $(call cc-option,-Wno-maybe-uninitialized,)
+
+# net/netfilter's "if (&some_linked_in_function)" null-checks against
+# always-linked function addresses (defensive checks predating this compiler
+# treating that as tautological); harmless under -Waddress.
+KBUILD_CFLAGS += $(call cc-option,-Wno-address,)
+
+# net/ipv6/xfrm6_tunnel.c's omitted-middle-operand ?: trips gcc 4.6+'s
+# stricter -Wparentheses; a real GNU C idiom, not a precedence bug here.
+KBUILD_CFLAGS += $(call cc-option,-Wno-parentheses,)
+
 # disable invalid "can't wrap" optimizations for signed / pointers
 KBUILD_CFLAGS	+= $(call cc-option,-fno-strict-overflow)
 

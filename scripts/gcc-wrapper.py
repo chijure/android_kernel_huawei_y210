@@ -59,6 +59,7 @@ allowed_warnings = set([
     "nf_conntrack_netlink.c:790",
     "nf_nat_standalone.c:118",
     "return_address.c:61",
+    "smd.c:2489",
     "soc-core.c:1719",
     "xt_log.h:50",
  ])

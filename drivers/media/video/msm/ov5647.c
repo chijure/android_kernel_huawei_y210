@@ -742,7 +742,7 @@ static int32_t ov5647_set_pict_exp_gain(uint16_t gain, uint32_t line)
 	int rc = 0;
 
 
-    uint16_t max_line;
+    uint16_t max_line = 0;
 	uint8_t gain_lsb, gain_hsb;
 	u8 intg_time_hsb, intg_time_msb, intg_time_lsb;
 

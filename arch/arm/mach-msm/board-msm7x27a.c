@@ -6349,8 +6349,8 @@ static struct attribute_group synaptics_properties_attr_group = {
 static void __init virtualkeys_init(void)
 {
     struct kobject *properties_kobj;
-    int ret;
-    
+    int ret = 0;
+
     if(machine_is_msm7x27a_U8815())
     {
     	buf_vkey_size = sprintf(buf_virtualkey,
