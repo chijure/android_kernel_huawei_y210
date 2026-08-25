@@ -357,7 +357,15 @@ BMIExecute(HIF_DEVICE *device,
         return A_ERROR;
     }
 
-    status = bmiBufferReceive(device, pBMICmdBuf, sizeof(*param), FALSE);
+    /* Was FALSE (unbounded busy loop) — matches this driver's OWN comment
+     * ("For now, we use an unbounded busy loop while waiting for
+     * BMI_EXECUTE") but a later revision of this exact codebase
+     * (ath6kl_bmi_execute/ath6kl_sdio_bmi_read in the mainline-merged
+     * driver) dropped that special case entirely and always uses the
+     * standard BMI_COMMUNICATION_TIMEOUT bound. Ported 2026-08-20: our
+     * REV3 chip's OTP-execute response never arrives and hangs this
+     * thread forever with FALSE; TRUE lets it time out cleanly instead. */
+    status = bmiBufferReceive(device, pBMICmdBuf, sizeof(*param), TRUE);
     if (status != A_OK) {
         AR_DEBUG_PRINTF(ATH_DEBUG_ERR, ("Unable to read from the device\n"));
         return A_ERROR;
@@ -863,7 +871,6 @@ bmiBufferReceive(HIF_DEVICE *device,
         word_available = 0;
         timeout = BMI_COMMUNICATION_TIMEOUT;
         while((!want_timeout || timeout--) && !word_available) {
-            
             if (getPendingEventsFunc != NULL) {
                 status = getPendingEventsFunc(device,
                                               &hifPendingEvents,

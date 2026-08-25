@@ -39,10 +39,21 @@ typedef int16_t     A_INT16;
 typedef int32_t     A_INT32;
 typedef int64_t     A_INT64;
 
+#ifdef __KERNEL__
+/* linux/types.h has no BSD-style u_intN_t aliases; use the kernel's own
+ * fixed-width types. This driver has never been compiled against this
+ * kernel tree before (CONFIG_ATH6K_LEGACY was unset in every defconfig),
+ * so this mismatch was previously undetected. */
+typedef __u8         A_UINT8;
+typedef __u16        A_UINT16;
+typedef __u32        A_UINT32;
+typedef __u64        A_UINT64;
+#else
 typedef u_int8_t     A_UINT8;
 typedef u_int16_t    A_UINT16;
 typedef u_int32_t    A_UINT32;
 typedef u_int64_t    A_UINT64;
+#endif
 
 typedef int             A_BOOL;
 typedef char            A_CHAR;

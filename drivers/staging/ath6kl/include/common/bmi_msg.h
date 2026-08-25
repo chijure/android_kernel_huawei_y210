@@ -90,6 +90,38 @@
          *    A_UINT8       data[length]
          * Response format: none
          */
+/*
+ * Ported 2026-08-20 from the real Atheros SDK (AR6K_SDK_ISC.build_3.1_RC.329,
+ * found via allwinner-ics/lichee_linux-3.0 on GitHub) — missing from this
+ * device tree entirely. A "segmented file" (magic "SGMT", per-segment
+ * address+length metadata, optionally LZ77-compressed) is sent via
+ * BMI_WRITE_MEMORY/BMI_LZ_STREAM_START with address=BMI_SEGMENTED_WRITE_ADDR
+ * on the FIRST command; firmware then parses segments itself, writing each
+ * to its own embedded address, executing immediately on a
+ * BMI_SGMTFILE_EXEC-typed segment. Y210's AR6003 REV3 (hw2.1.1) otp.bin is
+ * almost certainly in this format — the SDK unconditionally uses
+ * compressed=TRUE + this address for REV3's OTP transfer, unlike the flat
+ * BMIWriteMemory(address=AR6003_REV3_APP_LOAD_ADDRESS) this tree used
+ * before, which silently mis-wrote the SGMT header/segment metadata as if
+ * it were raw calibration bytes — explains why the write "succeeded" (bytes
+ * landed) but BMI_EXECUTE afterward never got a response (the target never
+ * actually ran the segmented file's real entry point).
+ */
+#define BMI_SEGMENTED_WRITE_ADDR 0x1234
+struct bmi_segmented_file_header {
+    A_UINT32 magic_num;
+    A_UINT32 file_flags;
+};
+#define BMI_SGMTFILE_MAGIC_NUM          0x544d4753 /* "SGMT" */
+#define BMI_SGMTFILE_FLAG_COMPRESS      1
+struct bmi_segmented_metadata {
+    A_UINT32 addr;
+    A_UINT32 length;
+};
+#define BMI_SGMTFILE_DONE               0xffffffff
+#define BMI_SGMTFILE_BDDATA             0xfffffffe
+#define BMI_SGMTFILE_BEGINADDR          0xfffffffd
+#define BMI_SGMTFILE_EXEC               0xfffffffc
 
 #define BMI_EXECUTE                         4
         /*

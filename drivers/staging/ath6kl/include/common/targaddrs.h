@@ -232,6 +232,21 @@ PREPACK struct host_interest_s {
 #define AR6003_REV2_OTP_DATA_ADDRESS      0x543800
 #define AR6003_BOARD_EXT_DATA_ADDRESS     0x57E600
 
+/* AR6003 REV3 (hw2.1.1 upstream / "hw3_0" in Huawei's own naming) — values
+ * from the real upstream ath6kl REV3 patch (torvalds/linux v3.0,
+ * drivers/staging/ath6kl), ported here 2026-08-20 because this device tree
+ * predates that patch series and never had REV3 support at all. Y210's real
+ * chip reports target_ver=0x30000582 == AR6003_REV3_VERSION, confirmed live.
+ * There is no separate "OTP data address" for REV3 upstream either — REV3
+ * OTP downloads reuse APP_LOAD_ADDRESS as the RAM staging area instead. */
+#define AR6003_REV3_APP_START_OVERRIDE    0x945d00
+#define AR6003_REV3_APP_LOAD_ADDRESS      0x545000
+#define AR6003_REV3_BOARD_EXT_DATA_ADDRESS 0x542330
+#define AR6003_REV3_DATASET_PATCH_ADDRESS 0x57FF74
+/* Was 512 (from an earlier/different torvalds/linux v3.0 snapshot) — fixed
+ * to the real Atheros SDK value (AR6K_SDK_ISC.build_3.1_RC.329) 2026-08-20. */
+#define AR6003_REV3_RAM_RESERVE_SIZE      4352
+
 
 /* # of A_UINT32 entries in targregs, used by DIAG_FETCH_TARG_REGS */
 #define AR6003_FETCH_TARG_REGS_COUNT 64

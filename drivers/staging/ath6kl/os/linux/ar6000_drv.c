@@ -1007,6 +1007,8 @@ ar6000_transfer_bin_file(AR_SOFTC_T *ar, AR6K_BIN_FILE file, A_UINT32 address, A
                 filename = AR6003_REV1_OTP_FILE;
             } else if (ar->arVersion.target_ver == AR6003_REV2_VERSION) {
                 filename = AR6003_REV2_OTP_FILE;
+            } else if (ar->arVersion.target_ver == AR6003_REV3_VERSION) {
+                filename = AR6003_REV3_OTP_FILE;
             } else {
                 AR_DEBUG_PRINTF(ATH_DEBUG_ERR, ("Unknown firmware revision: %d\n", ar->arVersion.target_ver));
                 return A_ERROR;
@@ -1018,6 +1020,8 @@ ar6000_transfer_bin_file(AR_SOFTC_T *ar, AR6K_BIN_FILE file, A_UINT32 address, A
                 filename = AR6003_REV1_FIRMWARE_FILE;
             } else if (ar->arVersion.target_ver == AR6003_REV2_VERSION) {
                 filename = AR6003_REV2_FIRMWARE_FILE;
+            } else if (ar->arVersion.target_ver == AR6003_REV3_VERSION) {
+                filename = AR6003_REV3_FIRMWARE_FILE;
             } else {
                 AR_DEBUG_PRINTF(ATH_DEBUG_ERR, ("Unknown firmware revision: %d\n", ar->arVersion.target_ver));
                 return A_ERROR;
@@ -1070,6 +1074,8 @@ ar6000_transfer_bin_file(AR_SOFTC_T *ar, AR6K_BIN_FILE file, A_UINT32 address, A
                 filename = AR6003_REV1_PATCH_FILE;
             } else if (ar->arVersion.target_ver == AR6003_REV2_VERSION) {
                 filename = AR6003_REV2_PATCH_FILE;
+            } else if (ar->arVersion.target_ver == AR6003_REV3_VERSION) {
+                filename = AR6003_REV3_PATCH_FILE;
             } else {
                 AR_DEBUG_PRINTF(ATH_DEBUG_ERR, ("Unknown firmware revision: %d\n", ar->arVersion.target_ver));
                 return A_ERROR;
@@ -1081,6 +1087,8 @@ ar6000_transfer_bin_file(AR_SOFTC_T *ar, AR6K_BIN_FILE file, A_UINT32 address, A
                 filename = AR6003_REV1_BOARD_DATA_FILE;
             } else if (ar->arVersion.target_ver == AR6003_REV2_VERSION) {
                 filename = AR6003_REV2_BOARD_DATA_FILE;
+            } else if (ar->arVersion.target_ver == AR6003_REV3_VERSION) {
+                filename = AR6003_REV3_BOARD_DATA_FILE;
             } else {
                 AR_DEBUG_PRINTF(ATH_DEBUG_ERR, ("Unknown firmware revision: %d\n", ar->arVersion.target_ver));
                 return A_ERROR;
@@ -1294,9 +1302,25 @@ ar6000_sysfs_bmi_get_config(AR_SOFTC_T *ar, A_UINT32 mode)
             param = 1;
             bmifn(BMIWriteMemory(ar->arHifDevice, HOST_INTEREST_ITEM_ADDRESS(ar, hi_board_data_initialized), (A_UCHAR *)&param, 4));
 
-            /* Transfer One time Programmable data */
-            AR6K_DATA_DOWNLOAD_ADDRESS(address, ar->arVersion.target_ver);
-            status = ar6000_transfer_bin_file(ar, AR6K_OTP_FILE, address, TRUE);
+            /* Transfer One time Programmable data.
+             * FIX 2026-08-20, found in the real Atheros SDK (see bmi_msg.h
+             * BMI_SEGMENTED_WRITE_ADDR comment): for REV3, otp.bin is a
+             * "segmented file" (SGMT header + per-segment address/length,
+             * LZ77-compressed), not a flat calibration blob. It must be sent
+             * with address=BMI_SEGMENTED_WRITE_ADDR and compressed=TRUE so
+             * firmware parses+executes the segments itself — earlier
+             * attempts used AR6K_DATA_DOWNLOAD_ADDRESS (a real RAM address)
+             * with compressed=FALSE, which silently mis-wrote the SGMT
+             * header as if it were raw data (transfer "succeeded" but
+             * BMI_EXECUTE afterward never got a response — the target never
+             * ran the file's real entry point). */
+            if (ar->arVersion.target_ver == AR6003_REV3_VERSION) {
+                address = BMI_SEGMENTED_WRITE_ADDR;
+            } else {
+                AR6K_DATA_DOWNLOAD_ADDRESS(address, ar->arVersion.target_ver);
+            }
+            status = ar6000_transfer_bin_file(ar, AR6K_OTP_FILE, address,
+                (ar->arVersion.target_ver == AR6003_REV3_VERSION) ? TRUE : FALSE);
             if (status == A_OK) {
                 /* Execute the OTP code */
                 param = 0;
@@ -1304,21 +1328,35 @@ ar6000_sysfs_bmi_get_config(AR_SOFTC_T *ar, A_UINT32 mode)
                 bmifn(BMIExecute(ar->arHifDevice, address, &param));
             } else if (status != A_ENOENT) {
                 return A_ERROR;
-            } 
+            }
         } else {
             AR_DEBUG_PRINTF(ATH_DEBUG_ERR, ("Programming of board data for chip %d not supported\n", ar->arTargetType));
             return A_ERROR;
         }
 
-        /* Download Target firmware */
-        AR6K_DATA_DOWNLOAD_ADDRESS(address, ar->arVersion.target_ver);
-        if ((ar6000_transfer_bin_file(ar, AR6K_FIRMWARE_FILE, address, TRUE)) != A_OK) {
+        /* Download Target firmware.
+         * FIX 2026-08-20 (same SDK source as the OTP fix above): athwlan.bin
+         * is ALSO a segmented file for REV3 — same address+compressed
+         * treatment as OTP. */
+        if (ar->arVersion.target_ver == AR6003_REV3_VERSION) {
+            address = BMI_SEGMENTED_WRITE_ADDR;
+        } else {
+            AR6K_DATA_DOWNLOAD_ADDRESS(address, ar->arVersion.target_ver);
+        }
+        if ((ar6000_transfer_bin_file(ar, AR6K_FIRMWARE_FILE, address,
+                (ar->arVersion.target_ver == AR6003_REV3_VERSION) ? TRUE : FALSE)) != A_OK) {
             return A_ERROR;
         }
 
-        /* Set starting address for firmware */
-        AR6K_APP_START_OVERRIDE_ADDRESS(address, ar->arVersion.target_ver);
-        bmifn(BMISetAppStart(ar->arHifDevice, address));
+        /* Set starting address for firmware.
+         * FIX 2026-08-20: the SDK only calls BMISetAppStart for REV2 — a
+         * segmented firmware file (REV3) carries its own start address via
+         * an embedded BMI_SGMTFILE_BEGINADDR segment, so this call is
+         * skipped entirely for REV3 in the real reference driver. */
+        if (ar->arVersion.target_ver != AR6003_REV3_VERSION) {
+            AR6K_APP_START_OVERRIDE_ADDRESS(address, ar->arVersion.target_ver);
+            bmifn(BMISetAppStart(ar->arHifDevice, address));
+        }
 
         /* Apply the patches */
         AR6K_PATCH_DOWNLOAD_ADDRESS(address, ar->arVersion.target_ver);
@@ -1333,6 +1371,9 @@ ar6000_sysfs_bmi_get_config(AR_SOFTC_T *ar, A_UINT32 mode)
             if (ar->arVersion.target_ver == AR6003_REV1_VERSION) {
                 /* Reserve 5.5K of RAM */
                 param = 5632;
+            } else if (ar->arVersion.target_ver == AR6003_REV3_VERSION) {
+                /* AR6003_REV3_RAM_RESERVE_SIZE, ported from upstream 2026-08-20 */
+                param = AR6003_REV3_RAM_RESERVE_SIZE;
             } else { /* AR6003_REV2_VERSION */
                 /* Reserve 6.5K of RAM */
                 param = 6656;

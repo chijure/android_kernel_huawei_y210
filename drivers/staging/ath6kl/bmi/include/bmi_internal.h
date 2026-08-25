@@ -36,6 +36,10 @@
 #define ATH_DEBUG_BMI  ATH_DEBUG_MAKE_MODULE_MASK(0)
 
 
+/* Tried 2000000 (20x, ~74s real) 2026-08-20 to test whether OTP-execute just
+ * needed more wall-clock time — RULED OUT: still times out completely even
+ * after a genuine 74-second wait with a byte-perfect segmented-file
+ * transfer already confirmed. Reverted to the original bounded value. */
 #define BMI_COMMUNICATION_TIMEOUT       100000
 
 /* ------ Global Variable Declarations ------- */

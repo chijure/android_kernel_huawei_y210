@@ -1010,9 +1010,12 @@ static int hifEnableFunc(HIF_DEVICE *device, struct sdio_func *func)
        /* enable the SDIO function */
         sdio_claim_host(func);
 
+        AR_DEBUG_PRINTF(ATH_DEBUG_ERR, ("Y210: sdio device->id->device=0x%x vendor=0x%x\n",
+                        device->id->device, device->id->vendor));
         if ((device->id->device & MANUFACTURER_ID_AR6K_BASE_MASK) >= MANUFACTURER_ID_AR6003_BASE) {
             /* enable 4-bit ASYNC interrupt on AR6003 or later devices */
             ret = Func0_CMD52WriteByte(func->card, CCCR_SDIO_IRQ_MODE_REG, SDIO_IRQ_MODE_ASYNC_4BIT_IRQ);
+            AR_DEBUG_PRINTF(ATH_DEBUG_ERR, ("Y210: 4-bit ASYNC IRQ CMD52 ret=%d\n", ret));
             if (ret) {
                 AR_DEBUG_PRINTF(ATH_DEBUG_ERR, ("AR6000: failed to enable 4-bit ASYNC IRQ mode %d \n",ret));
                 sdio_release_host(func);
@@ -1020,8 +1023,10 @@ static int hifEnableFunc(HIF_DEVICE *device, struct sdio_func *func)
             }
             AR_DEBUG_PRINTF(ATH_DEBUG_TRACE, ("AR6000: 4-bit ASYNC IRQ mode enabled\n"));
         }
-        /* give us some time to enable, in ms */
-        func->enable_timeout = 100;
+        /* give us some time to enable, in ms
+         * (Y210: bumped from the upstream 100ms — the chip sits right at
+         * the edge of that after our added GPIO power-on settling delay) */
+        func->enable_timeout = 2000;
         ret = sdio_enable_func(func);
         if (ret) {
             AR_DEBUG_PRINTF(ATH_DEBUG_ERROR, ("AR6000: %s(), Unable to enable AR6K: 0x%X\n",

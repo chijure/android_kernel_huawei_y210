@@ -4661,6 +4661,37 @@ int ar6000_ioctl(struct net_device *dev, struct ifreq *rq, int cmd)
 #endif
             break;
 
+        case SIOCSIWPRIV:
+        {
+            /*
+             * ath_supplicant requests background/combo scans via a CSCAN
+             * buffer over SIOCSIWPRIV (Android WEXT convention). This
+             * driver doesn't parse the CSCAN SSID/channel list; treat any
+             * such request as a plain background scan trigger instead of
+             * rejecting it. Previously sioctl_filter blocked this cmd
+             * outright, so every periodic background scan failed, which
+             * made ath_supplicant declare the driver HANGED and forced a
+             * full ar6000 unload/reload cycle roughly every 5 minutes.
+             */
+            if (ar->arWmiReady == FALSE || ar->arWlanState == WLAN_DISABLED) {
+                ret = -EIO;
+                break;
+            }
+
+            if (ar->scan_triggered > 0) {
+                ++ar->scan_triggered;
+                break;
+            }
+
+            if (wmi_startscan_cmd(ar->arWmi, WMI_SHORT_SCAN, FALSE, FALSE,
+                                   0, 0, 0, NULL) != A_OK) {
+                ret = -EIO;
+            } else {
+                ar->scan_triggered = 1;
+            }
+            break;
+        }
+
         default:
             ret = -EOPNOTSUPP;
     }

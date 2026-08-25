@@ -74,11 +74,11 @@ ccflags-y += -DATH_AR6K_ENABLE_GMBOX
 ccflags-y += -DHCI_TRANSPORT_SDIO
 ccflags-y += -DSETUPHCI_ENABLED
 ccflags-y += -DSETUPBTDEV_ENABLED
-ath6kl-y += htc2/AR6000/ar6k_gmbox.o
-ath6kl-y += htc2/AR6000/ar6k_gmbox_hciuart.o
-ath6kl-y += miscdrv/ar3kconfig.o
-ath6kl-y += miscdrv/ar3kps/ar3kpsconfig.o
-ath6kl-y += miscdrv/ar3kps/ar3kpsparser.o
+ar6000-y += htc2/AR6000/ar6k_gmbox.o
+ar6000-y += htc2/AR6000/ar6k_gmbox_hciuart.o
+ar6000-y += miscdrv/ar3kconfig.o
+ar6000-y += miscdrv/ar3kps/ar3kpsconfig.o
+ar6000-y += miscdrv/ar3kps/ar3kpsparser.o
 endif
 
 ifeq ($(CONFIG_ATH6KL_CONFIG_GPIO_BT_RESET),y)
@@ -87,7 +87,7 @@ endif
 
 ifeq ($(CONFIG_ATH6KL_CFG80211),y)
 ccflags-y += -DATH6K_CONFIG_CFG80211
-ath6kl-y += os/linux/cfg80211.o
+ar6000-y += os/linux/cfg80211.o
 endif
 
 ifeq ($(CONFIG_ATH6KL_HTC_RAW_INTERFACE),y)
@@ -128,32 +128,58 @@ ccflags-y += -DWLAN_HEADERS
 ccflags-y += -DINIT_MODE_DRV_ENABLED
 ccflags-y += -DBMIENABLE_SET
 
-obj-$(CONFIG_ATH6K_LEGACY) := ath6kl.o
-ath6kl-y += htc2/AR6000/ar6k.o
-ath6kl-y += htc2/AR6000/ar6k_events.o
-ath6kl-y += htc2/htc_send.o
-ath6kl-y += htc2/htc_recv.o
-ath6kl-y += htc2/htc_services.o
-ath6kl-y += htc2/htc.o
-ath6kl-y += bmi/src/bmi.o
-ath6kl-y += os/linux/ar6000_drv.o
-ath6kl-y += os/linux/ar6000_raw_if.o
-ath6kl-y += os/linux/ar6000_pm.o
-ath6kl-y += os/linux/netbuf.o
-ath6kl-y += os/linux/wireless_ext.o
-ath6kl-y += os/linux/ioctl.o
-ath6kl-y += os/linux/hci_bridge.o
-ath6kl-y += os/linux/ar6k_pal.o
-ath6kl-y += miscdrv/common_drv.o
-ath6kl-y += miscdrv/credit_dist.o
-ath6kl-y += wmi/wmi.o
-ath6kl-y += reorder/rcv_aggr.o
-ath6kl-y += wlan/src/wlan_node.o
-ath6kl-y += wlan/src/wlan_recv_beacon.o
-ath6kl-y += wlan/src/wlan_utils.o			 
+# Android glue (android_request_firmware/android_readwrite_file, wakelock,
+# mmc host detect-change): the deployed firmware layout under
+# /data/misc/wifi/load/ and the vendor blob's behavior both depend on this
+# path being active, not the vanilla request_firmware() one.
+ccflags-y += -DANDROID_ENV
+
+# This driver's os-selection headers (a_types.h, a_osapi.h) gate on
+# __linux__, but arm-eabi-4.4.3 (target triple "arm-eabi", not
+# "arm-linux-...") never predefines it. Without this, A_UINT8/A_UCHAR/etc
+# and PREPACK/POSTPACK are silently left undefined, which cascades into
+# thousands of unrelated-looking "expected ';' before struct" errors
+# throughout wmi.h/bmi.h/hif.h/ieee80211.h.
+ccflags-y += -D__linux__
+
+# Built as "ar6000" (not the upstream "ath6kl" name) so the resulting module
+# matches WIFI_DRIVER_MODULE_NAME/insmod-rmmod expectations already baked
+# into BoardConfig.mk and hardware/libhardware_legacy/wifi/wifi.c.
+# ar6000_ioctl() declares several large WMI_*_CMD structs unconditionally
+# at the top of a 2800-line switch (pre-existing, unrelated to any local
+# change here); its stack frame exceeds the kernel-wide -Wframe-larger-than
+# lint threshold, which this build treats as a fatal "forbidden warning".
+# 1960 bytes is well within the 8K kernel stack, so raise the threshold for
+# this one file instead of restructuring vendor ioctl dispatch code.
+CFLAGS_ioctl.o := -Wframe-larger-than=4096
+
+obj-$(CONFIG_ATH6K_LEGACY) := ar6000.o
+ar6000-y += htc2/AR6000/ar6k.o
+ar6000-y += htc2/AR6000/ar6k_events.o
+ar6000-y += htc2/htc_send.o
+ar6000-y += htc2/htc_recv.o
+ar6000-y += htc2/htc_services.o
+ar6000-y += htc2/htc.o
+ar6000-y += bmi/src/bmi.o
+ar6000-y += os/linux/ar6000_drv.o
+ar6000-y += os/linux/ar6000_android.o
+ar6000-y += os/linux/ar6000_raw_if.o
+ar6000-y += os/linux/ar6000_pm.o
+ar6000-y += os/linux/netbuf.o
+ar6000-y += os/linux/wireless_ext.o
+ar6000-y += os/linux/ioctl.o
+ar6000-y += os/linux/hci_bridge.o
+ar6000-y += os/linux/ar6k_pal.o
+ar6000-y += miscdrv/common_drv.o
+ar6000-y += miscdrv/credit_dist.o
+ar6000-y += wmi/wmi.o
+ar6000-y += reorder/rcv_aggr.o
+ar6000-y += wlan/src/wlan_node.o
+ar6000-y += wlan/src/wlan_recv_beacon.o
+ar6000-y += wlan/src/wlan_utils.o
 
 # ATH_HIF_TYPE := sdio
 ccflags-y += -I$(obj)/hif/sdio/linux_sdio/include
 ccflags-y += -DSDIO
-ath6kl-y += hif/sdio/linux_sdio/src/hif.o
-ath6kl-y += hif/sdio/linux_sdio/src/hif_scatter.o
+ar6000-y += hif/sdio/linux_sdio/src/hif.o
+ar6000-y += hif/sdio/linux_sdio/src/hif_scatter.o

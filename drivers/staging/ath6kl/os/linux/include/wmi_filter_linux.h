@@ -54,7 +54,7 @@ A_UINT8 sioctl_filter[] = {
 (0),                                            /* SIOCGIWSENS     0x8B09   */
 (0),                                            /* SIOCSIWRANGE    0x8B0A   */
 (0xFF),                                         /* SIOCGIWRANGE    0x8B0B   */
-(0),                                            /* SIOCSIWPRIV     0x8B0C   */
+(INFRA_NETWORK | ADHOC_NETWORK),                /* SIOCSIWPRIV     0x8B0C   */
 (0),                                            /* SIOCGIWPRIV     0x8B0D   */
 (0),                                            /* SIOCSIWSTATS    0x8B0E   */
 (0),                                            /* SIOCGIWSTATS    0x8B0F   */

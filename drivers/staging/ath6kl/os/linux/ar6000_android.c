@@ -24,6 +24,10 @@
 #include "htc.h"
 #include <linux/vmalloc.h>
 #include <linux/fs.h>
+#include <linux/gpio.h>
+#include <linux/delay.h>
+#include <mach/vreg.h>
+#include <mach/rpc_pmapp.h>
 
 #ifdef CONFIG_HAS_WAKELOCK
 #include <linux/wakelock.h>
@@ -32,7 +36,33 @@
 #include <linux/earlysuspend.h>
 #endif
 
-A_BOOL enable_mmc_host_detect_change = 0;
+A_BOOL enable_mmc_host_detect_change = 1;
+
+/*
+ * Y210: ATH_WLAN_REG (GPIO 6) is the AR6003 chip enable/power line. The
+ * board file (arch/arm/mach-msm/board-msm7x27a.c, ath_wifi_init_gpio_mem())
+ * requests this GPIO at kernel boot and explicitly drives it LOW (chip
+ * off) before mmc1 (SDC2, the SDIO WLAN slot) does its one-shot CMD5 scan
+ * a few seconds later — so the scan always times out (-110) against a
+ * powered-off chip. The vendor's private driver powers this back on
+ * itself (visible in dmesg as "vote for wlan4 vreg"/"vote for WLAN GPIO 6
+ * done"), but that sequence isn't part of this open-source ath6kl tree.
+ * We don't own the gpio_request() for this pin (the board file does),
+ * but gpio_set_value() doesn't require ownership, only the number.
+ */
+#define Y210_ATH_WLAN_REG_GPIO 6
+
+/*
+ * "wlan4" (1200mV) is a separate regulator rail from the GPIO6 enable
+ * line — see drivers/net/wireless/libra/qcomwlan7x27a_pwrif.c's
+ * vreg_info[] table, written for a different chip package (QRF6285) but
+ * exposing the same shared board rail name. The vendor dmesg trace this
+ * whole investigation started from ("vote for wlan4 vreg" / "vote for
+ * WLAN GPIO 6 done") votes both together — GPIO6 alone gets the SDIO
+ * card readable (CIS tuples, card address) but not far enough to enable
+ * the actual I/O function, which times out. This is the missing rail.
+ */
+static struct vreg *y210_wlan4_vreg;
 static void ar6000_enable_mmchost_detect_change(int enable);
 
 
@@ -295,7 +325,9 @@ static A_STATUS ar6000_android_avail_ev(void *context, void *hif_handle)
 static void ar6000_enable_mmchost_detect_change(int enable)
 {
 #ifdef CONFIG_MMC_MSM
-#define MMC_MSM_DEV "msm_sdcc.1"
+/* SDC2 is the SDIO WLAN slot on this board (see the "SDIO WLAN slot"
+ * comment in msm7x27a_init_mmc()); SDC1 is the external microSD. */
+#define MMC_MSM_DEV "msm_sdcc.2"
     char buf[3];
     int length;
 
@@ -341,6 +373,52 @@ void android_module_init(OSDRV_CALLBACKS *osdrvCallbacks)
     ar6000_avail_ev_p = osdrvCallbacks->deviceInsertedHandler;
     osdrvCallbacks->deviceInsertedHandler = ar6000_android_avail_ev;
 
+    /* Power the chip on before asking mmc1/SDC2 to rescan for it —
+     * otherwise the rescan just times out the same way the board's own
+     * one-shot boot-time scan did. Vote for "wlan4" first (the rail),
+     * then the GPIO6 enable line, mirroring the vendor's "vote for wlan4
+     * vreg" + "vote for WLAN GPIO 6" pairing. */
+    y210_wlan4_vreg = vreg_get(NULL, "wlan4");
+    if (!IS_ERR(y210_wlan4_vreg)) {
+        int lvl_rc = vreg_set_level(y210_wlan4_vreg, 1200);
+        int en_rc = vreg_enable(y210_wlan4_vreg);
+        AR_DEBUG_PRINTF(ATH_DEBUG_ERR,
+            ("Y210: wlan4 vreg_set_level=%d vreg_enable=%d\n", lvl_rc, en_rc));
+    } else {
+        y210_wlan4_vreg = NULL;
+        AR_DEBUG_PRINTF(ATH_DEBUG_ERR, ("Y210: vreg_get(wlan4) failed\n"));
+    }
+    /*
+     * gpio_direction_output() (not gpio_set_value()) — disassembly of the
+     * vendor blob's msm7x27a_wifi_power() shows it re-asserts direction+
+     * value atomically via gpiolib, not just the output register.
+     */
+    gpio_direction_output(Y210_ATH_WLAN_REG_GPIO, 1);
+    AR_DEBUG_PRINTF(ATH_DEBUG_ERR,
+        ("Y210: gpio6 set to %d\n", gpio_get_value(Y210_ATH_WLAN_REG_GPIO)));
+
+    /*
+     * The vendor blob's msm7x27a_wifi_power() (reverse-engineered via
+     * objdump, 2026-08-20 — see drivers/net/wireless/libra/
+     * qcomwlan7x27a_pwrif.c's chip_power_qrf6285() for the matching
+     * open-source reference pattern on this same platform family, same
+     * function names/error strings, different chip) votes PMAPP_CLOCK_ID_A0
+     * ON via pmapp_clock_vote() right after driving the enable GPIO high —
+     * printed as "Vote for A0 clock done" in vendor dmesg. This reference
+     * clock feeds the AR6003's internal PLL/firmware boot, separate from
+     * the SDIO bus clock (which comes from the host controller and already
+     * works fine without this vote — hence SDIO enumerates the card but
+     * the chip's own firmware never signals function-ready). This vote is
+     * never issued anywhere in this open-source ath6kl tree.
+     */
+    {
+        int clk_rc = pmapp_clock_vote("WLAN", PMAPP_CLOCK_ID_A0, PMAPP_CLOCK_VOTE_ON);
+        AR_DEBUG_PRINTF(ATH_DEBUG_ERR,
+            ("Y210: pmapp_clock_vote(A0, ON) = %d\n", clk_rc));
+    }
+
+    msleep(1000);
+
     ar6000_enable_mmchost_detect_change(1);
 }
 
@@ -353,6 +431,18 @@ void android_module_exit(void)
     wake_lock_destroy(&ar6k_init_wake_lock);
 #endif
     ar6000_enable_mmchost_detect_change(1);
+
+    pmapp_clock_vote("WLAN", PMAPP_CLOCK_ID_A0, PMAPP_CLOCK_VOTE_OFF);
+
+    /* Power the chip back off on unload, matching the board's own
+     * boot-time-off default (avoids leaving the regulator on to leak
+     * current while no driver is bound). android_module_init() powers
+     * it back on for the next load/reload cycle. */
+    gpio_set_value(Y210_ATH_WLAN_REG_GPIO, 0);
+    if (y210_wlan4_vreg) {
+        vreg_disable(y210_wlan4_vreg);
+        y210_wlan4_vreg = NULL;
+    }
 }
 
 #ifdef CONFIG_PM

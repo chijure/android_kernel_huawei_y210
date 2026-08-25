@@ -266,6 +266,8 @@ typedef enum _AR6K_BIN_FILE {
         (_param) = AR6003_REV1_PATCH_DOWNLOAD_ADDRESS; \
     } else if ((_ver) == AR6003_REV2_VERSION) { \
         (_param) = AR6003_REV2_PATCH_DOWNLOAD_ADDRESS; \
+    } else if ((_ver) == AR6003_REV3_VERSION) { \
+        (_param) = AR6003_REV3_PATCH_DOWNLOAD_ADDRESS; \
     } else { \
        AR_DEBUG_PRINTF(ATH_DEBUG_ERR, ("Unknown Version: %d\n", _ver)); \
        A_ASSERT(0); \
@@ -277,6 +279,8 @@ typedef enum _AR6K_BIN_FILE {
         (_param) = AR6003_REV1_DATA_DOWNLOAD_ADDRESS; \
     } else if ((_ver) == AR6003_REV2_VERSION) { \
         (_param) = AR6003_REV2_DATA_DOWNLOAD_ADDRESS; \
+    } else if ((_ver) == AR6003_REV3_VERSION) { \
+        (_param) = AR6003_REV3_DATA_DOWNLOAD_ADDRESS; \
     } else { \
        AR_DEBUG_PRINTF(ATH_DEBUG_ERR, ("Unknown Version: %d\n", _ver)); \
        A_ASSERT(0); \
@@ -288,51 +292,79 @@ typedef enum _AR6K_BIN_FILE {
         (_param) = AR6003_REV1_APP_START_OVERRIDE; \
     } else if ((_ver) == AR6003_REV2_VERSION) { \
         (_param) = AR6003_REV2_APP_START_OVERRIDE; \
+    } else if ((_ver) == AR6003_REV3_VERSION) { \
+        (_param) = AR6003_REV3_APP_START_OVERRIDE; \
     } else { \
        AR_DEBUG_PRINTF(ATH_DEBUG_ERR, ("Unknown Version: %d\n", _ver)); \
        A_ASSERT(0); \
     } \
 } while (0)
 
+/*
+ * Y210: these paths are resolved by android_request_firmware() (see
+ * ar6000_android.c) as fwpath ("/system/wifi") + "/" + this string. The
+ * "../../" prefix walks back up to /data/misc/wifi/load/, where the
+ * existing "on post-fs-data" init.huawei.rc block already copies the
+ * real (uncompressed) chip firmware/calibration files on every boot —
+ * see PRODUCT_COPY_FILES/fix_wifi_firmware. There is no
+ * ath6k/AR6003/hw*.0/ layout or bdata.*.bin on this device; using the
+ * upstream default paths here makes every firmware load fail.
+ */
+#define Y210_OTP_FILE          "../../data/misc/wifi/load/otp.bin"
+#define Y210_FIRMWARE_FILE     "../../data/misc/wifi/load/athwlan.bin"
+#define Y210_PATCH_FILE        "../../data/misc/wifi/load/data.patch.hw3_0.bin"
+#define Y210_BOARD_DATA_FILE   "../../data/misc/wifi/load/caldata.bin"
+
 /* AR6003 1.0 definitions */
 #define AR6003_REV1_VERSION                 0x300002ba
 #define AR6003_REV1_DATA_DOWNLOAD_ADDRESS   AR6003_REV1_OTP_DATA_ADDRESS
 #define AR6003_REV1_PATCH_DOWNLOAD_ADDRESS  0x57ea6c
-#define AR6003_REV1_OTP_FILE                "ath6k/AR6003/hw1.0/otp.bin.z77"
-#define AR6003_REV1_FIRMWARE_FILE           "ath6k/AR6003/hw1.0/athwlan.bin.z77"
+#define AR6003_REV1_OTP_FILE                Y210_OTP_FILE
+#define AR6003_REV1_FIRMWARE_FILE           Y210_FIRMWARE_FILE
 #define AR6003_REV1_TCMD_FIRMWARE_FILE      "ath6k/AR6003/hw1.0/athtcmd_ram.bin"
 #define AR6003_REV1_ART_FIRMWARE_FILE       "ath6k/AR6003/hw1.0/device.bin"
-#define AR6003_REV1_PATCH_FILE              "ath6k/AR6003/hw1.0/data.patch.bin"
+#define AR6003_REV1_PATCH_FILE              Y210_PATCH_FILE
 #define AR6003_REV1_EPPING_FIRMWARE_FILE    "ath6k/AR6003/hw1.0/endpointping.bin"
-#ifdef AR600x_SD31_XXX
-#define AR6003_REV1_BOARD_DATA_FILE         "ath6k/AR6003/hw1.0/bdata.SD31.bin"
-#elif defined(AR600x_SD32_XXX)
-#define AR6003_REV1_BOARD_DATA_FILE         "ath6k/AR6003/hw1.0/bdata.SD32.bin"
-#elif defined(AR600x_WB31_XXX)
-#define AR6003_REV1_BOARD_DATA_FILE         "ath6k/AR6003/hw1.0/bdata.WB31.bin"
-#else
-#define AR6003_REV1_BOARD_DATA_FILE         "ath6k/AR6003/hw1.0/bdata.CUSTOM.bin"
-#endif /* Board Data File */
+#define AR6003_REV1_BOARD_DATA_FILE         Y210_BOARD_DATA_FILE
 
-/* AR6003 2.0 definitions */
-#define AR6003_REV2_VERSION                 0x30000384 
+/* AR6003 2.0 definitions (genuine Venus2.0 reference silicon — restored
+ * 2026-08-20 to its real upstream value; this device's actual chip is
+ * REV3, see below. Aliasing this to the real chip's ID was a mistake:
+ * it made the "Temporary WAR to avoid SDIO CRC error" GPIO_PIN10-13 writes
+ * fire for our chip too, which were never meant for it. REV1/REV2 file
+ * constants stay pointed at Y210's generic files only because this device
+ * tree never runs on genuine hw1.0/hw2.0 silicon, not because the IDs
+ * themselves should be reused for a different real chip.) */
+#define AR6003_REV2_VERSION                 0x30000384
 #define AR6003_REV2_DATA_DOWNLOAD_ADDRESS   AR6003_REV2_OTP_DATA_ADDRESS
 #define AR6003_REV2_PATCH_DOWNLOAD_ADDRESS  0x57e910
-#define AR6003_REV2_OTP_FILE                "ath6k/AR6003/hw2.0/otp.bin.z77"
-#define AR6003_REV2_FIRMWARE_FILE           "ath6k/AR6003/hw2.0/athwlan.bin.z77"
+#define AR6003_REV2_OTP_FILE                Y210_OTP_FILE
+#define AR6003_REV2_FIRMWARE_FILE           Y210_FIRMWARE_FILE
 #define AR6003_REV2_TCMD_FIRMWARE_FILE      "ath6k/AR6003/hw2.0/athtcmd_ram.bin"
 #define AR6003_REV2_ART_FIRMWARE_FILE       "ath6k/AR6003/hw2.0/device.bin"
-#define AR6003_REV2_PATCH_FILE              "ath6k/AR6003/hw2.0/data.patch.bin"
+#define AR6003_REV2_PATCH_FILE              Y210_PATCH_FILE
 #define AR6003_REV2_EPPING_FIRMWARE_FILE    "ath6k/AR6003/hw2.0/endpointping.bin"
-#ifdef AR600x_SD31_XXX
-#define AR6003_REV2_BOARD_DATA_FILE         "ath6k/AR6003/hw2.0/bdata.SD31.bin"
-#elif defined(AR600x_SD32_XXX)
-#define AR6003_REV2_BOARD_DATA_FILE         "ath6k/AR6003/hw2.0/bdata.SD32.bin"
-#elif defined(AR600x_WB31_XXX)
-#define AR6003_REV2_BOARD_DATA_FILE         "ath6k/AR6003/hw2.0/bdata.WB31.bin"
-#else
-#define AR6003_REV2_BOARD_DATA_FILE         "ath6k/AR6003/hw2.0/bdata.CUSTOM.bin"
-#endif /* Board Data File */
+#define AR6003_REV2_BOARD_DATA_FILE         Y210_BOARD_DATA_FILE
+
+/* AR6003 REV3 (upstream calls it "hw2.1.1"; Huawei's own naming calls it
+ * "hw3_0", see Y210_PATCH_FILE) — Y210's real chip, confirmed live
+ * 2026-08-20 (target_ver=0x30000582 via BMI). This device tree predates the
+ * upstream REV3 patch series entirely (no AR6K_APP_LOAD_ADDRESS/
+ * AR6K_DATASET_PATCH_ADDRESS macros existed here before today). Ported from
+ * torvalds/linux v3.0 drivers/staging/ath6kl. Upstream has no dedicated
+ * "OTP data address" for REV3 either — it reuses APP_LOAD_ADDRESS as the
+ * RAM staging area for the (uncompressed, in our case) OTP blob instead of
+ * a REV2-style fixed OTP_DATA_ADDRESS. */
+#define AR6003_REV3_VERSION                 0x30000582
+#define AR6003_REV3_DATA_DOWNLOAD_ADDRESS   AR6003_REV3_APP_LOAD_ADDRESS
+#define AR6003_REV3_PATCH_DOWNLOAD_ADDRESS  AR6003_REV3_DATASET_PATCH_ADDRESS
+#define AR6003_REV3_OTP_FILE                Y210_OTP_FILE
+#define AR6003_REV3_FIRMWARE_FILE           Y210_FIRMWARE_FILE
+#define AR6003_REV3_TCMD_FIRMWARE_FILE      "ath6k/AR6003/hw2.1.1/athtcmd_ram.bin"
+#define AR6003_REV3_ART_FIRMWARE_FILE       "ath6k/AR6003/hw2.1.1/device.bin"
+#define AR6003_REV3_PATCH_FILE              Y210_PATCH_FILE
+#define AR6003_REV3_EPPING_FIRMWARE_FILE    "ath6k/AR6003/hw2.1.1/endpointping.bin"
+#define AR6003_REV3_BOARD_DATA_FILE         Y210_BOARD_DATA_FILE
 
 /* Power states */
 enum {

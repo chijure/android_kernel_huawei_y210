@@ -83,11 +83,11 @@
 #define A_MALLOC_NOWAIT(size)           kmalloc((size), GFP_ATOMIC)
 #define A_FREE(addr)                    kfree(addr)
 
-#if defined(ANDROID_ENV) && defined(CONFIG_ANDROID_LOGGER)
+#if defined(ANDROID_ENV) && defined(CONFIG_ANDROID_LOGGER) && !defined(CONFIG_MMC_MSM)
 extern unsigned int enablelogcat;
 extern int android_logger_lv(void* module, int mask);
 enum logidx { LOG_MAIN_IDX = 0 };
-extern int logger_write(const enum logidx idx, 
+extern int logger_write(const enum logidx idx,
                 const unsigned char prio,
                 const char __kernel * const tag,
                 const char __kernel * const fmt,
@@ -98,6 +98,12 @@ extern int logger_write(const enum logidx idx,
     else \
         printk(KERN_ALERT args); \
 } while (0)
+#elif defined(ANDROID_ENV) && defined(CONFIG_ANDROID_LOGGER)
+/* ar6000_android.c only defines logger_write() when !CONFIG_MMC_MSM (this
+ * board sets CONFIG_MMC_MSM=y for real SDIO hardware) — without this branch
+ * the extern above compiles but never links, and insmod fails with
+ * "Unknown symbol logger_write". Fall back to plain printk. */
+#define A_ANDROID_PRINTF(mask, module, tags, args...) printk(KERN_ALERT args)
 #ifdef DEBUG
 #define A_LOGGER_MODULE_NAME(x) #x
 #define A_LOGGER(mask, mod, args...) \
